@@ -1,0 +1,18 @@
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.DS_Store
+*.model
+*.pkl
+
+# Large datasets (too big for GitHub without LFS)
+data/creditcard.csv
+data/*.sqlite
+data/*.zip
+
+# Uploads from Flask
+app/uploads/
+
+# Results images (auto-generated)
+results/*.png

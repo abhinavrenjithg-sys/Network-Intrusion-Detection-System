@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Threat Intel RAG Copilot</title>
+    <!-- We load React directly via CDN so you don't need a heavy Node.js 'npm install' architecture! -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <!-- Babel allows JSX compilation in the browser for this fast MVP -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #f8fafc; font-family: 'Inter', sans-serif; }
+        .chat-area { height: 65vh; overflow-y: auto; scroll-behavior: smooth; }
+        .message { padding: 15px; border-radius: 8px; margin-bottom: 12px; max-width: 80%; line-height: 1.5; }
+        .user-msg { background-color: #3b82f6; margin-left: auto; border-bottom-right-radius: 0; }
+        .bot-msg { background-color: #1e293b; border: 1px solid #334155; margin-right: auto; border-bottom-left-radius: 0; }
+        .source-tag { font-size: 0.75rem; color: #94a3b8; margin-top: 8px; display: block; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="p-6">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function RAGChatbot() {
+            const [messages, setMessages] = React.useState([
+                { sender: "bot", text: "Welcome to ThreatWatch AI. I am hooked directly into your local FAISS instance containing NVD CVEs and MITRE Tactics. How can I assist your investigation today?", sources: null }
+            ]);
+            const [input, setInput] = React.useState("");
+            const [isLoading, setIsLoading] = React.useState(false);
+
+            const handleSend = async () => {
+                if (!input.trim()) return;
+                
+                const userQuery = input;
+                setMessages(prev => [...prev, { sender: "user", text: userQuery, sources: null }]);
+                setInput("");
+                setIsLoading(true);
+
+                try {
+                    // Send to our local FastAPI LangChain Backend running on Port 8003
+                    const response = await fetch("http://localhost:8003/chat", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ query: userQuery })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                         setMessages(prev => [...prev, { sender: "bot", text: `Error: ${data.error} - ${data.response}`, sources: null }]);
+                    } else {
+                         setMessages(prev => [...prev, { sender: "bot", text: data.response, sources: data.sources }]);
+                    }
+                } catch (err) {
+                    setMessages(prev => [...prev, { sender: "bot", text: "Network Error: Could not reach the FastAPI RAG Endpoint on 127.0.0.1:8003.", sources: null }]);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const handleKeyPress = (e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                }
+            };
+
+            return (
+                <div className="max-w-4xl mx-auto flex flex-col h-full">
+                    <div className="bg-slate-900 border border-slate-700 rounded-t-xl p-4 flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-xl shadow-[0_0_15px_rgba(99,102,241,0.5)]">🤖</div>
+                            <div>
+                                <h1 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-400">Cyber Threat RAG Copilot</h1>
+                                <p className="text-xs text-slate-400">Powered by HuggingFace / FAISS / FastAPI</p>
+                            </div>
+                        </div>
+                        <span className="flex items-center text-xs text-emerald-400 bg-emerald-400/10 px-3 py-1 rounded-full border border-emerald-400/20">
+                            <span className="w-2 h-2 bg-emerald-400 rounded-full mr-2 animate-pulse"></span> ONLINE
+                        </span>
+                    </div>
+
+                    <div className="bg-slate-800 border-x border-slate-700 p-6 chat-area shadow-inner flex flex-col space-y-4">
+                        {messages.map((msg, idx) => (
+                            <div key={idx} className={`message ${msg.sender === 'user' ? 'user-msg shadow-lg shadow-blue-500/20' : 'bot-msg shadow-md'}`}>
+                                <div className="text-sm">{msg.text}</div>
+                                {msg.sources && (
+                                    <div className="source-tag">📚 Source: {msg.sources}</div>
+                                )}
+                            </div>
+                        ))}
+                        {isLoading && (
+                            <div className="message bot-msg flex items-center space-x-2 w-32 border border-indigo-500/30">
+                                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+                                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="bg-slate-900 border border-slate-700 rounded-b-xl p-4">
+                        <div className="flex space-x-2">
+                            <textarea 
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={handleKeyPress}
+                                placeholder="E.g., Which MITRE tactic uses Malicious Macros and how is it mitigated?"
+                                className="flex-1 bg-slate-800 border border-slate-600 rounded-lg p-3 text-white focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 resize-none"
+                                rows="2"
+                            ></textarea>
+                            <button 
+                                onClick={handleSend}
+                                disabled={isLoading || !input.trim()}
+                                className="bg-gradient-to-r from-indigo-500 to-blue-600 hover:from-indigo-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-all duration-200 shadow-[0_0_20px_rgba(99,102,241,0.3)] hover:shadow-[0_0_25px_rgba(99,102,241,0.6)]"
+                            >
+                                Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<RAGChatbot />);
+    </script>
+</body>
+</html>

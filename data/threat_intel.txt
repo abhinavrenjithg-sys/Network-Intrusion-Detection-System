@@ -1,0 +1,7 @@
+CVE-2023-34362: MOVEit Transfer SQL Injection vulnerability. A critical vulnerability in Progress MOVEit Transfer allows unauthenticated remote attackers to gain unauthorized access to the database. CVSS: 9.8 (Critical). Remediation: Immediately apply the vendor patches, block external access to HTTP/HTTPS ports used by the transfer protocol if unpatched, and rotate service account credentials.
+
+CVE-2021-44228: Log4Shell. An unauthenticated remote code execution vulnerability found in Apache Log4j 2. Attackers can execute arbitrary code by supplying a maliciously formatted JNDI string. CVSS: 10.0 (Critical). Remediation: Upgrade log4j2 to version 2.15.0 or later, implement WAF rules to block "${jndi:" strings.
+
+MITRE ATT&CK T1078: Valid Accounts. Cyber adversaries frequently use stolen credentials or active valid accounts to bypass access controls and evade generic signature-based detection. Remediation: Mandate Multi-Factor Authentication (MFA), actively monitor and automatically block Impossible Travel logins, and conduct routine auditing of dormant Active Directory accounts.
+
+MITRE ATT&CK T1566: Phishing. Adversaries send deceptive emails containing malicious attachments or links to invoke User Execution. Spearphishing attachments often contain embedded macros or PE executables. Remediation: Implement secure email gateways (SEG), detonate suspected attachments in a sandbox, and invoke an AI-driven NLP classification system to quarantine deceptive conversational hooks.
